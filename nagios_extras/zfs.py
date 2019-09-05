@@ -4,7 +4,7 @@ import typing as ty
 import logging
 
 import nagiosplugin
-from nagiosplugin import Metric, ScalarContext, Ok, Warn, Critical
+from nagiosplugin import Metric
 
 from .nagios_support import ScalarPercentContext, Check, PerformanceContext
 
@@ -35,10 +35,10 @@ class Pools(nagiosplugin.Resource):
             yield from self.process(**info)
 
     def process(self, name, size, alloc, frag, health, **_):
-        yield nagiosplugin.Metric("%s health" % name, value=health, context="health")
-        yield nagiosplugin.Metric(name, value=alloc, min=0, max=size, context="pool")
-        yield nagiosplugin.Metric(
-            "%s fragmentation" % name, value=frag, min=0, max=100, context="frag"
+        yield Metric("%s health" % name, value=health, context="health")
+        yield Metric(name, value=alloc, min=0, max=size, context="pool")
+        yield Metric(
+            "%s_fragmentation" % name, value=frag, min=0, max=100, context="frag"
         )
 
 
@@ -48,10 +48,11 @@ class HealthContext(nagiosplugin.Context):
             return self.result_cls(nagiosplugin.Critical, metric=metric)
         return self.result_cls(nagiosplugin.Ok, metric=metric)
 
+
 def get_check(warn: str, crit: str, pools: tuple) -> Check:
     return Check(
         Pools(pools),
         ScalarPercentContext("pool", warn, crit, unit="B"),
         PerformanceContext("frag", unit="%"),
-        HealthContext("health")
+        HealthContext("health"),
     )
